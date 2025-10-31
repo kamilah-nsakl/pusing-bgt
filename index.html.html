@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Klasifikasi Penyakit - Decision Tree</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #45a049;
+            --secondary: #2196F3;
+            --accent: #FF9800;
+            --light: #f8f9fa;
+            --dark: #333;
+            --gray: #6c757d;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: var(--dark);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        header {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .floating-icon {
+            position: absolute;
+            font-size: 100px;
+            opacity: 0.1;
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .floating-icon:nth-child(1) {
+            top: 20px;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .floating-icon:nth-child(2) {
+            top: 40px;
+            right: 15%;
+            animation-delay: 2s;
+        }
+        
+        .floating-icon:nth-child(3) {
+            bottom: 30px;
+            left: 20%;
+            animation-delay: 4s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            animation: slideIn 1s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        header p {
+            font-size: 18px;
+            opacity: 0.9;
+            animation: slideIn 1s ease-out 0.3s both;
+        }
+        
+        .accuracy-badge {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: bold;
+            margin-top: 15px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .form-section {
+            margin-bottom: 40px;
+            animation: fadeIn 1s ease-out 0.5s both;
+        }
+        
+        h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        h2 i {
+            color: var(--secondary);
+        }
+        
+        .symptoms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .symptom-item {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        
+        .symptom-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .symptom-item.selected {
+            background: #e8f5e9;
+            border-color: var(--primary);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.2);
+        }
+        
+        .symptom-item input {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+        
+        .symptom-item label {
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .symptom-icon {
+            color: var(--secondary);
+            font-size: 18px;
+        }
+        
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 0 auto;
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .result-section {
+            background: var(--light);
+            padding: 25px;
+            border-radius: 15px;
+            margin-top: 20px;
+            display: none;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-section h3 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .disease-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.08);
+            border-left: 5px solid var(--primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .disease-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 100%;
+            background: linear-gradient(to right, rgba(76, 175, 80, 0.1), transparent);
+            transition: width 0.5s ease;
+        }
+        
+        .disease-card:hover::before {
+            width: 100%;
+        }
+        
+        .disease-card:hover {
+            transform: translateX(10px);
+        }
+        
+        .disease-name {
+            font-weight: bold;
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: var(--dark);
+        }
+        
+        .probability {
+            color: var(--gray);
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--primary);
+            border-radius: 5px;
+            width: 0;
+            transition: width 1s ease-out;
+        }
+        
+        .feature-importance {
+            margin-top: 40px;
+        }
+        
+        .feature-bar {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(-30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .feature-name {
+            width: 150px;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .feature-value {
+            flex-grow: 1;
+            height: 20px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 15px;
+        }
+        
+        .feature-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 10px;
+            width: 0;
+            transition: width 1.5s ease-out;
+        }
+        
+        .feature-percent {
+            width: 50px;
+            text-align: right;
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--dark);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 25px;
+            background: #f5f5f5;
+            color: var(--gray);
+            font-size: 14px;
+        }
+        
+        .disclaimer {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .tree-visualization {
+            margin-top: 30px;
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .tree-node {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin: 10px;
+            font-weight: bold;
+            animation: bounce 1s ease-out;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+        
+        @media (max-width: 768px) {
+            .symptoms-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                border-radius: 15px;
+            }
+            
+            header h1 {
+                font-size: 24px;
+            }
+            
+            header p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="floating-icon">
+                <i class="fas fa-heartbeat"></i>
+            </div>
+            <div class="floating-icon">
+                <i class="fas fa-stethoscope"></i>
+            </div>
+            <div class="floating-icon">
+                <i class="fas fa-clipboard-check"></i>
+            </div>
+            
+            <div class="header-content">
+                <h1><i class="fas fa-diagnoses"></i> Sistem Klasifikasi Penyakit Berdasarkan Gejala</h1>
+                <p>Menggunakan Algoritma Decision Tree - Magister Ilmu Komputer Universitas Pakuan</p>
+                <div class="accuracy-badge">
+                    <i class="fas fa-award"></i> Akurasi 92%
+                </div>
+            </div>
+        </header>
+        
+        <div class="content">
+            <div class="form-section">
+                <h2><i class="fas fa-check-circle"></i> Pilih Gejala yang Dialami</h2>
+                <div class="symptoms-grid" id="symptomsContainer">
+                    <!-- Gejala akan diisi oleh JavaScript -->
+                </div>
+                
+                <button class="btn" id="diagnoseBtn">
+                    <i class="fas fa-search"></i> Diagnosa Penyakit
+                </button>
+            </div>
+            
+            <div class="result-section" id="resultSection">
+                <h2><i class="fas fa-file-medical-alt"></i> Hasil Diagnosa</h2>
+                <div id="diseaseResults">
+                    <!-- Hasil diagnosa akan diisi oleh JavaScript -->
+                </div>
+                
+                <div class="feature-importance">
+                    <h3><i class="fas fa-chart-bar"></i> Tingkat Kepentingan Gejala</h3>
+                    <div id="featureImportance">
+                        <!-- Feature importance akan diisi oleh JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="tree-visualization">
+                    <h3><i class="fas fa-project-diagram"></i> Visualisasi Decision Tree</h3>
+                    <div class="tree-node">Batuk</div>
+                    <div class="tree-node">Muntah</div>
+                    <div class="tree-node">Sesak Napas</div>
+                    <div class="tree-node">Demam</div>
+                    <p style="margin-top: 15px; color: var(--gray);">Struktur pohon keputusan berdasarkan importance gejala</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2025 Sistem Klasifikasi Penyakit</p>
+                <i class="fas fa-exclamation-triangle"></i> 
+           </div>
+        </footer>
+    </div>
+
+    <script>
+        // Data gejala berdasarkan penelitian
+        const symptoms = [
+            { id: 'batuk', name: 'Batuk', importance: 0.26, icon: 'fas fa-lungs' },
+            { id: 'muntah', name: 'Muntah', importance: 0.15, icon: 'fas fa-procedures' },
+            { id: 'sesak_napas', name: 'Sesak Napas', importance: 0.15, icon: 'fas fa-wind' },
+            { id: 'demam', name: 'Demam', importance: 0.10, icon: 'fas fa-thermometer-full' },
+            { id: 'ruam', name: 'Ruam', importance: 0.09, icon: 'fas fa-allergies' },
+            { id: 'diare', name: 'Diare', importance: 0.08, icon: 'fas fa-toilet' },
+            { id: 'nyeri_dada', name: 'Nyeri Dada', importance: 0.07, icon: 'fas fa-heart' },
+            { id: 'nyeri_tenggorokan', name: 'Nyeri Tenggorokan', importance: 0.06, icon: 'fas fa-comment-medical' },
+            { id: 'sakit_kepala', name: 'Sakit Kepala', importance: 0.04, icon: 'fas fa-head-side-virus' },
+            { id: 'kelelahan', name: 'Kelelahan', importance: 0.03, icon: 'fas fa-bed' }
+        ];
+
+        // Data penyakit berdasarkan penelitian
+        const diseases = [
+            { name: 'Pneumonia', accuracy: 0.98, symptoms: ['batuk', 'sesak_napas', 'demam', 'nyeri_dada'] },
+            { name: 'Alergi', accuracy: 0.98, symptoms: ['batuk', 'nyeri_tenggorokan', 'ruam'] },
+            { name: 'Flu', accuracy: 0.94, symptoms: ['batuk', 'demam', 'nyeri_tenggorokan', 'sakit_kepala', 'kelelahan'] },
+            { name: 'COVID-19', accuracy: 0.94, symptoms: ['batuk', 'sesak_napas', 'demam', 'kelelahan'] },
+            { name: 'Gastroenteritis', accuracy: 0.94, symptoms: ['muntah', 'diare', 'demam'] },
+            { name: 'Demam Berdarah', accuracy: 0.90, symptoms: ['demam', 'sakit_kepala', 'ruam', 'muntah'] },
+            { name: 'Migrain', accuracy: 0.87, symptoms: ['sakit_kepala', 'kelelahan'] },
+            { name: 'Tifus', accuracy: 0.82, symptoms: ['demam', 'muntah', 'diare', 'sakit_kepala'] }
+        ];
+
+        // Fungsi untuk menampilkan gejala ke dalam form
+        function renderSymptoms() {
+            const container = document.getElementById('symptomsContainer');
+            container.innerHTML = '';
+            
+            symptoms.forEach(symptom => {
+                const symptomItem = document.createElement('div');
+                symptomItem.className = 'symptom-item';
+                
+                symptomItem.innerHTML = `
+                    <label>
+                        <input type="checkbox" id="${symptom.id}" name="symptoms" value="${symptom.id}">
+                        <i class="${symptom.icon} symptom-icon"></i>
+                        ${symptom.name}
+                    </label>
+                `;
+                
+                // Tambah event listener untuk toggle class selected
+                const checkbox = symptomItem.querySelector('input');
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        symptomItem.classList.add('selected');
+                    } else {
+                        symptomItem.classList.remove('selected');
+                    }
+                });
+                
+                container.appendChild(symptomItem);
+            });
+        }
+
+        // Fungsi untuk menghitung kemungkinan penyakit berdasarkan gejala
+        function calculateDiseaseProbabilities(selectedSymptoms) {
+            const results = [];
+            
+            diseases.forEach(disease => {
+                // Hitung persentase gejala yang cocok
+                const matchingSymptoms = disease.symptoms.filter(symptom => 
+                    selectedSymptoms.includes(symptom)
+                );
+                
+                const matchPercentage = matchingSymptoms.length / disease.symptoms.length;
+                
+                // Hitung skor probabilitas
+                let probability = matchPercentage * disease.accuracy;
+                
+                // Tambahkan bobot berdasarkan importance gejala yang dipilih
+                let importanceSum = 0;
+                selectedSymptoms.forEach(symptomId => {
+                    const symptom = symptoms.find(s => s.id === symptomId);
+                    if (symptom) {
+                        importanceSum += symptom.importance;
+                    }
+                });
+                
+                probability *= (1 + importanceSum);
+                
+                results.push({
+                    name: disease.name,
+                    probability: Math.min(probability, 0.99), // Batasi maksimal 99%
+                    matchingSymptoms: matchingSymptoms.length,
+                    totalSymptoms: disease.symptoms.length
+                });
+            });
+            
+            // Urutkan berdasarkan probabilitas tertinggi
+            return results.sort((a, b) => b.probability - a.probability);
+        }
+
+        // Fungsi untuk menampilkan hasil diagnosa
+        function showResults(selectedSymptoms) {
+            const results = calculateDiseaseProbabilities(selectedSymptoms);
+            const resultsContainer = document.getElementById('diseaseResults');
+            const resultSection = document.getElementById('resultSection');
+            
+            resultsContainer.innerHTML = '';
+            
+            if (results.length === 0 || results[0].probability < 0.1) {
+                resultsContainer.innerHTML = `
+                    <div class="disease-card">
+                        <div class="disease-name">Tidak dapat menentukan diagnosis</div>
+                        <div class="probability">Gejala yang dipilih tidak cukup spesifik. Silakan konsultasi dengan dokter.</div>
+                    </div>
+                `;
+            } else {
+                results.forEach((disease, index) => {
+                    if (disease.probability > 0.1) {
+                        const percentage = Math.round(disease.probability * 100);
+                        const diseaseElement = document.createElement('div');
+                        diseaseElement.className = 'disease-card';
+                        diseaseElement.innerHTML = `
+                            <div class="disease-name">${index + 1}. ${disease.name}</div>
+                            <div class="probability">Probabilitas: ${percentage}% (${disease.matchingSymptoms} dari ${disease.totalSymptoms} gejala cocok)</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        `;
+                        resultsContainer.appendChild(diseaseElement);
+                    }
+                });
+            }
+            
+            // Tampilkan feature importance
+            renderFeatureImportance(selectedSymptoms);
+            
+            // Tampilkan section hasil
+            resultSection.style.display = 'block';
+            
+            // Scroll ke hasil
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+            
+            // Animasikan progress bars
+            setTimeout(() => {
+                document.querySelectorAll('.progress-fill').forEach(fill => {
+                    fill.style.width = fill.style.width;
+                });
+            }, 100);
+        }
+
+        // Fungsi untuk menampilkan feature importance
+        function renderFeatureImportance(selectedSymptoms) {
+            const container = document.getElementById('featureImportance');
+            container.innerHTML = '';
+            
+            // Filter gejala yang dipilih dan urutkan berdasarkan importance
+            const selectedSymptomsData = symptoms
+                .filter(symptom => selectedSymptoms.includes(symptom.id))
+                .sort((a, b) => b.importance - a.importance);
+            
+            selectedSymptomsData.forEach(symptom => {
+                const featureBar = document.createElement('div');
+                featureBar.className = 'feature-bar';
+                
+                const percentage = Math.round(symptom.importance * 100);
+                
+                featureBar.innerHTML = `
+                    <div class="feature-name">
+                        <i class="${symptom.icon}"></i> ${symptom.name}
+                    </div>
+                    <div class="feature-value">
+                        <div class="feature-fill" style="width: 0%"></div>
+                    </div>
+                    <div class="feature-percent">${percentage}%</div>
+                `;
+                
+                container.appendChild(featureBar);
+                
+                // Animasikan pengisian bar
+                setTimeout(() => {
+                    featureBar.querySelector('.feature-fill').style.width = `${percentage}%`;
+                }, 300);
+            });
+        }
+
+        // Event listener untuk tombol diagnosa
+        document.getElementById('diagnoseBtn').addEventListener('click', function() {
+            const selectedCheckboxes = document.querySelectorAll('input[name="symptoms"]:checked');
+            const selectedSymptoms = Array.from(selectedCheckboxes).map(checkbox => checkbox.value);
+            
+            if (selectedSymptoms.length === 0) {
+                alert('Silakan pilih setidaknya satu gejala.');
+                return;
+            }
+            
+            // Animasi tombol
+            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+            this.disabled = true;
+            
+            setTimeout(() => {
+                showResults(selectedSymptoms);
+                this.innerHTML = '<i class="fas fa-search"></i> Diagnosa Penyakit';
+                this.disabled = false;
+            }, 1500);
+        });
+
+        // Inisialisasi aplikasi
+        document.addEventListener('DOMContentLoaded', function() {
+            renderSymptoms();
+        });
+    </script>
+</body>
+</html>
